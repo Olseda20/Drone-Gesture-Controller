@@ -35,9 +35,13 @@ SDA  -  A4
 SCL  -  A5
 *//////////////////////////////////////////////////////////////////////////////////////
 
-//Include LCD and I2C library
 #include <Wire.h>
 
+const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
+
+//Include LCD and I2C library
+int no_sensors = 6;// the number of sensors in the system
+int pin;
 //Declaring some global variables
 int gyro_x[6], gyro_y[6], gyro_z[6];
 long acc_x[6], acc_y[6], acc_z[6], acc_total_vector[6];
@@ -51,42 +55,44 @@ int angle_pitch_buffer[6], angle_roll_buffer[6];
 boolean set_gyro_angles[6];
 float angle_roll_acc[6], angle_pitch_acc[6];
 float angle_pitch_output[6], angle_roll_output[6];
-
-const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
-
-
+  
 void setup() {
   //Setting up the IMUs
   Wire.begin();                                                        //Start I2C as master
   Serial.begin(57600);                                                 //Use only for debugging
-
-  for (int i = 2; i <=7; i++){
-  pinMode(i, OUTPUT);
-  digitalWrite(i,HIGH);
-  }
-
-  for (int i = 2; i <=7; i++){
-  digitalWrite(i,LOW); //turn on the IMU 
-  setup_mpu_6050_registers();     //Setup the registers of the MPU-6050  (i-2 because IMU_num are 0-5 and pin are 2-7)
-  digitalWrite(i,HIGH); // turn off the IMU
-  }
-
-
-  int calIter = 200; //Calibration Interations (different to cal_int)
   
-  for(int IMU_num = 0; IMU_num <=5; IMU_num++){
+  int min_pin = pinSelector(0); //Selecting the relevant pit for the IMU
+  int max_pin = pinSelector(no_sensors-1); //Selecting the relevant pit for the IMU
+  
+  for (int pin = min_pin; pin <=max_pin; pin++){
+  pinMode(pin, OUTPUT);
+  digitalWrite(pin,HIGH);
+  }
+
+  for (int pin = min_pin; pin <=max_pin; pin++){
+  digitalWrite(pin,LOW); //turn on the IMU 
+  setup_mpu_6050_registers();     //Setup the registers of the MPU-6050  (i-2 because IMU_num are 0-5 and pin are 2-7)
+  digitalWrite(pin,HIGH); // turn off the IMU
+  }
+
+
+  int calIter = 2000; //Calibration Interations (different to cal_int)
+  
+  
   //Calibrating the IMUs
-  for (int cal_int = 0; cal_int < calIter ; cal_int ++){                  //Run this code 2000 times
-    Serial.print("Calibrating IMU ");Serial.println(IMU_num);
-//    digitalWrite(i+2,LOW); // setting the right IMU to be read (i_2 because IMU_num are 0-5 and pin are 2-7))
-    read_mpu_6050_data(IMU_num);                                              //Read the raw acc and gyro data from the MPU-6050
-    gyro_x_cal[IMU_num] += gyro_x[IMU_num];                                              //Add the gyro x-axis offset to the gyro_x_cal variable
-    gyro_y_cal[IMU_num] += gyro_y[IMU_num];                                              //Add the gyro y-axis offset to the gyro_y_cal variable
-    gyro_z_cal[IMU_num] += gyro_z[IMU_num];                                              //Add the gyro z-axis offset to the gyro_z_cal variable
-//    digitalWrite(i+2,HIGH);
-    delay(1);
+  for (int cal_int = 0; cal_int < calIter ; cal_int ++){
+    //Run this code 2000 times
+    Serial.print("[INFO] Calibrating IMUs, iteration:  ");Serial.print(cal_int);Serial.print('/');Serial.println(calIter);
+    for(int IMU_num = 0; IMU_num <= no_sensors-1; IMU_num++){
+    read_mpu_6050_data(IMU_num);//Read the raw acc and gyro data from the MPU-6050
+    gyro_x_cal[IMU_num] += gyro_x[IMU_num];//Add the gyro x-axis offset to the gyro_x_cal variable
+    gyro_y_cal[IMU_num] += gyro_y[IMU_num];//Add the gyro y-axis offset to the gyro_y_cal variable
+    gyro_z_cal[IMU_num] += gyro_z[IMU_num];//Add the gyro z-axis offset to the gyro_z_cal variable
+    delay(3);
+    }
     //Delay 3us to simulate the 250Hz program loop
   }
+  for(int IMU_num = 0; IMU_num <= no_sensors-1; IMU_num++){
   gyro_x_cal[IMU_num] /= calIter;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
   gyro_y_cal[IMU_num] /= calIter;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
   gyro_z_cal[IMU_num] /= calIter;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
@@ -97,35 +103,28 @@ void setup() {
 }
 
 void loop(){
-  for(int IMU_num = 0; IMU_num <=5; IMU_num++)
+  for(int IMU_num = 0; IMU_num <=no_sensors-1; IMU_num++)
   {
-//    read_mpu_6050_data(i);
    computeAngle(IMU_num);
 
   }
   
-//  //RUN FUNCTION TO DO sensor read 
-//  float pitch1 = angle_pitch_output;
-//  float roll1 = angle_roll_output;
+//// Displaying the data
 
-//angle_pitch_output
-//angle_roll_output
-
-  //Displaying the data
-  Serial.print("\n\nIMU1\t");
-//  Serial.print("Gyro x: "); Serial.print(gyro_x[0]);
-//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[0]);
-//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[0]);
-  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[0]);
-  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[0]);
-  
+//  Serial.print("\n\nIMU1\t");
+////  Serial.print("Gyro x: "); Serial.print(gyro_x[0]);
+////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[0]);
+////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[0]);
+//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[0]);
+//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[0]);
+//  
 //  Serial.print("\nIMU2\t");
 ////  Serial.print("Gyro x: "); Serial.print(gyro_x[1]);
 ////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[1]);
 ////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[1]);
 //  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[1]);
 //  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[1]);
-
+//
 //  Serial.print("\nIMU3\t");
 ////  Serial.print("Gyro x: "); Serial.print(gyro_x[2]);
 ////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[2]);
@@ -146,14 +145,13 @@ void loop(){
 ////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[4]);
 //  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[4]);
 //  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[4]);
-
+//
   Serial.print("\nIMU6\t");
 //  Serial.print("Gyro x: "); Serial.print(gyro_x[5]);
 //  Serial.print("  \tGyro y: "); Serial.print(gyro_y[5]);
 //  Serial.print("  \tGyro z: "); Serial.print(gyro_z[5]);
   Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[5]);
   Serial.print("  \tRoll: "); Serial.print(angle_roll_output[5]);
-  
 
   while(micros() - loop_timer < 4000);//Wait until the loop_timer reaches 4000us (250Hz) before starting the next loop
   loop_timer = micros();//Reset the loop timer
@@ -205,8 +203,9 @@ void computeAngle(int IMU_num){
 
 //Need to input the imu pin number or something to allow us to select the right imu
 void read_mpu_6050_data(int IMU_num){//Subroutine for reading the raw gyro and accelerometer data
-  int AD0pin = IMU_num + 2;
-  digitalWrite(AD0pin,LOW);
+
+  pin = pinSelector(IMU_num); //Selecting the relevant pit for the IMU
+  digitalWrite(pin,LOW);
   Wire.beginTransmission(MPU_ADDR); //Start communicating with the MPU-6050
   Wire.write(0x3B);                 //Send the requested starting register
   Wire.endTransmission();           //End the transmission
@@ -219,7 +218,7 @@ void read_mpu_6050_data(int IMU_num){//Subroutine for reading the raw gyro and a
   gyro_x[IMU_num] = Wire.read()<<8|Wire.read(); //Add the low and high byte to the gyro_x variable
   gyro_y[IMU_num] = Wire.read()<<8|Wire.read(); //Add the low and high byte to the gyro_y variable
   gyro_z[IMU_num] = Wire.read()<<8|Wire.read(); //Add the low and high byte to the gyro_z variable
-  digitalWrite(AD0pin,HIGH);
+  digitalWrite(pin,HIGH);
 }
 
 
@@ -241,4 +240,28 @@ void setup_mpu_6050_registers()
   Wire.write(0x08);//Set the requested starting register
   Wire.endTransmission();//End the transmission
 }
-    
+
+//Function to select the corrent Arduino Pin for the relevent IMU's AD0 pin
+int pinSelector(int IMU_number){
+  switch(IMU_number)
+  {
+    case 0:     //IMU 1
+      return 2;  //Aduino Digital Pin 2
+//      break;
+    case 1:     //IMU 2
+      return 3;  //Aduino Digital Pin 3
+//      break;
+    case 2:     //IMU 3
+      return 4;  //Aduino Digital Pin 4
+//      break;
+    case 3:     //IMU 4
+      return 5;  //Aduino Digital Pin 5
+//      break;
+    case 4:     //IMU 5
+      return 6;  //Aduino Digital Pin 6
+//      break;
+    case 5:     //IMU 6
+      return 7;  //Aduino Digital Pin 7
+//      break;
+  }
+} 
