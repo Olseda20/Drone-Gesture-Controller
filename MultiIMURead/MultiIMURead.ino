@@ -66,115 +66,117 @@ void setup() {
   }
 
   for (int i = 2; i <=7; i++){
-  digitalWrite(i,LOW);
+  digitalWrite(i,LOW); //turn on the IMU 
   setup_mpu_6050_registers();     //Setup the registers of the MPU-6050  (i-2 because IMU_num are 0-5 and pin are 2-7)
-  digitalWrite(i,HIGH);
+  digitalWrite(i,HIGH); // turn off the IMU
   }
 
 
   int calIter = 200; //Calibration Interations (different to cal_int)
   
-  for(int i = 0; i <=5; i++){
+  for(int IMU_num = 0; IMU_num <=5; IMU_num++){
   //Calibrating the IMUs
   for (int cal_int = 0; cal_int < calIter ; cal_int ++){                  //Run this code 2000 times
-    Serial.print("Calibrating IMU ");Serial.println(i);
-    digitalWrite(i+2,LOW); // setting the right IMU to be read (i_2 because IMU_num are 0-5 and pin are 2-7))
-    read_mpu_6050_data(i);                                              //Read the raw acc and gyro data from the MPU-6050
-    gyro_x_cal[i] += gyro_x[i];                                              //Add the gyro x-axis offset to the gyro_x_cal variable
-    gyro_y_cal[i] += gyro_y[i];                                              //Add the gyro y-axis offset to the gyro_y_cal variable
-    gyro_z_cal[i] += gyro_z[i];                                              //Add the gyro z-axis offset to the gyro_z_cal variable
-    digitalWrite(i+2,HIGH);
+    Serial.print("Calibrating IMU ");Serial.println(IMU_num);
+//    digitalWrite(i+2,LOW); // setting the right IMU to be read (i_2 because IMU_num are 0-5 and pin are 2-7))
+    read_mpu_6050_data(IMU_num);                                              //Read the raw acc and gyro data from the MPU-6050
+    gyro_x_cal[IMU_num] += gyro_x[IMU_num];                                              //Add the gyro x-axis offset to the gyro_x_cal variable
+    gyro_y_cal[IMU_num] += gyro_y[IMU_num];                                              //Add the gyro y-axis offset to the gyro_y_cal variable
+    gyro_z_cal[IMU_num] += gyro_z[IMU_num];                                              //Add the gyro z-axis offset to the gyro_z_cal variable
+//    digitalWrite(i+2,HIGH);
     delay(1);
     //Delay 3us to simulate the 250Hz program loop
   }
-  gyro_x_cal[i] /= calIter;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
-  gyro_y_cal[i] /= calIter;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
-  gyro_z_cal[i] /= calIter;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
-  
+  gyro_x_cal[IMU_num] /= calIter;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
+  gyro_y_cal[IMU_num] /= calIter;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
+  gyro_z_cal[IMU_num] /= calIter;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
+  Serial.print("Calibrating IMU ");Serial.print(IMU_num);Serial.print(" complete ");
+
   loop_timer = micros();                                               //Reset the loop timer
   }
 }
 
-void setup_mpu_6050_registers(){
+void setup_mpu_6050_registers()
+{
   //Activate the MPU-6050 
-  Wire.beginTransmission(MPU_ADDR);                                        //Start communicating with the MPU-6050
-  Wire.write(0x6B);                                                    //Send the requested starting register
-  Wire.write(0x00);                                                    //Set the requested starting register
-  Wire.endTransmission();                                              //End the transmission
+  Wire.beginTransmission(MPU_ADDR);//Start communicating with the MPU-6050
+  Wire.write(0x6B);//Send the requested starting register
+  Wire.write(0x00);//Set the requested starting register
+  Wire.endTransmission();//End the transmission
   //Configure the accelerometer (+/-8g)
-  Wire.beginTransmission(MPU_ADDR);                                        //Start communicating with the MPU-6050
-  Wire.write(0x1C);                                                    //Send the requested starting register
-  Wire.write(0x10);                                                    //Set the requested starting register
-  Wire.endTransmission();                                              //End the transmission
+  Wire.beginTransmission(MPU_ADDR);//Start communicating with the MPU-6050
+  Wire.write(0x1C);//Send the requested starting register
+  Wire.write(0x10);//Set the requested starting register
+  Wire.endTransmission();//End the transmission
   //Configure the gyro (500dps full scale)
-  Wire.beginTransmission(MPU_ADDR);                                        //Start communicating with the MPU-6050
-  Wire.write(0x1B);                                                    //Send the requested starting register
-  Wire.write(0x08);                                                    //Set the requested starting register
-  Wire.endTransmission();                                              //End the transmission
+  Wire.beginTransmission(MPU_ADDR);//Start communicating with the MPU-6050
+  Wire.write(0x1B);//Send the requested starting register
+  Wire.write(0x08);//Set the requested starting register
+  Wire.endTransmission();//End the transmission
 }
 
 //Need to input the imu pin number or something to allow us to select the right imu
-void read_mpu_6050_data(int IMU_num){                                             //Subroutine for reading the raw gyro and accelerometer data
-  Wire.beginTransmission(MPU_ADDR);                                        //Start communicating with the MPU-6050
-  Wire.write(0x3B);                                                    //Send the requested starting register
-  Wire.endTransmission();                                              //End the transmission
-  Wire.requestFrom(MPU_ADDR,14);                                           //Request 14 bytes from the MPU-6050
-  while(Wire.available() < 14);                                        //Wait until all the bytes are received
-  acc_x[IMU_num] = Wire.read()<<8|Wire.read();                                  //Add the low and high byte to the acc_x variable
-  acc_y[IMU_num] = Wire.read()<<8|Wire.read();                                  //Add the low and high byte to the acc_y variable
-  acc_z[IMU_num] = Wire.read()<<8|Wire.read();                                  //Add the low and high byte to the acc_z variable
-  temperature[IMU_num] = Wire.read()<<8|Wire.read();                            //Add the low and high byte to the temperature variable
-  gyro_x[IMU_num] = Wire.read()<<8|Wire.read();                                 //Add the low and high byte to the gyro_x variable
-  gyro_y[IMU_num] = Wire.read()<<8|Wire.read();                                 //Add the low and high byte to the gyro_y variable
-  gyro_z[IMU_num] = Wire.read()<<8|Wire.read();                                 //Add the low and high byte to the gyro_z variable
-
+void read_mpu_6050_data(int IMU_num){//Subroutine for reading the raw gyro and accelerometer data
+  digitalWrite(IMU_num+2,LOW);
+  Wire.beginTransmission(MPU_ADDR);//Start communicating with the MPU-6050
+  Wire.write(0x3B);//Send the requested starting register
+  Wire.endTransmission();//End the transmission
+  Wire.requestFrom(MPU_ADDR,14);//Request 14 bytes from the MPU-6050
+  while(Wire.available() < 14);//Wait until all the bytes are received
+  acc_x[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the acc_x variable
+  acc_y[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the acc_y variable
+  acc_z[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the acc_z variable
+  temperature[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the temperature variable
+  gyro_x[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the gyro_x variable
+  gyro_y[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the gyro_y variable
+  gyro_z[IMU_num] = Wire.read()<<8|Wire.read();//Add the low and high byte to the gyro_z variable
+  digitalWrite(IMU_num+2,HIGH);
 }
 
 void loop(){
+  for(int i = 0; i <=5; i++)
+  {
+    read_mpu_6050_data(i);
+//    computeAngle();
+
+  }
   
-  for(int i = 0; i <=5; i++){read_mpu_6050_data(i);}
-  
+
 //  //RUN FUNCTION TO DO sensor read 
-//  computeAngle();
-//  //Sensor1 
 //  float pitch1 = angle_pitch_output;
 //  float roll1 = angle_roll_output;
-//  
-////  //Displaying the data
+  
+  //Displaying the data
   Serial.print("\n\nIMU1\t");
-  Serial.print("Gyro x: "); Serial.print(gyro_x[0]);
-  Serial.print("\tGyro y: "); Serial.print(gyro_y[0]);
-  Serial.print("\tGyro z: "); Serial.print(gyro_z[0]);
+  Serial.print("Gyro x: "); Serial.print(gyro_x[0]);Serial.print(1);
+  Serial.print("  \tGyro y: "); Serial.print(gyro_y[0]);Serial.print(2);
+  Serial.print("  \tGyro z: "); Serial.print(gyro_z[0]);
   Serial.print("\nIMU2\t");
   Serial.print("Gyro x: "); Serial.print(gyro_x[1]);
-  Serial.print("\tGyro y: "); Serial.print(gyro_y[1]);
-  Serial.print("\tGyro z: "); Serial.print(gyro_z[1]);
+  Serial.print("  \tGyro y: "); Serial.print(gyro_y[1]);
+  Serial.print("  \tGyro z: "); Serial.print(gyro_z[1]);
   Serial.print("\nIMU3\t");
   Serial.print("Gyro x: "); Serial.print(gyro_x[2]);
-  Serial.print("\tGyro y: "); Serial.print(gyro_y[2]);
-  Serial.print("\tGyro z: "); Serial.print(gyro_z[2]);
+  Serial.print("  \tGyro y: "); Serial.print(gyro_y[2]);
+  Serial.print("  \tGyro z: "); Serial.print(gyro_z[2]);
   Serial.print("\nIMU4\t");
   Serial.print("Gyro x: "); Serial.print(gyro_x[3]);
-  Serial.print("\tGyro y: "); Serial.print(gyro_y[3]);
-  Serial.print("\tGyro z: "); Serial.print(gyro_z[3]);
+  Serial.print("  \tGyro y: "); Serial.print(gyro_y[3]);
+  Serial.print("  \tGyro z: "); Serial.print(gyro_z[3]);
   Serial.print("\nIMU5\t");
   Serial.print("Gyro x: "); Serial.print(gyro_x[4]);
-  Serial.print("\tGyro y: "); Serial.print(gyro_y[4]);
-  Serial.print("\tGyro z: "); Serial.print(gyro_z[4]);
+  Serial.print("  \tGyro y: "); Serial.print(gyro_y[4]);
+  Serial.print("  \tGyro z: "); Serial.print(gyro_z[4]);
   Serial.print("\nIMU6\t");
   Serial.print("Gyro x: "); Serial.print(gyro_x[5]);
-  Serial.print("\tGyro y: "); Serial.print(gyro_y[5]);
-  Serial.print("\tGyro z: "); Serial.print(gyro_z[5]);
+  Serial.print("  \tGyro y: "); Serial.print(gyro_y[5]);
+  Serial.print("  \tGyro z: "); Serial.print(gyro_z[5]);
   
-//
-//
-//  while(micros() - loop_timer < 4000);                                 //Wait until the loop_timer reaches 4000us (250Hz) before starting the next loop
-//  loop_timer = micros();                                               //Reset the loop timer
+
+  while(micros() - loop_timer < 4000);                                 //Wait until the loop_timer reaches 4000us (250Hz) before starting the next loop
+  loop_timer = micros();                                               //Reset the loop timer
 }
-//
-//
-//
-//
+
 
 
 //void computeAngle(){//int imuNumber){
