@@ -145,6 +145,7 @@ void loop(){
 //  //RUN FUNCTION TO DO sensor read 
 //  float pitch1 = angle_pitch_output;
 //  float roll1 = angle_roll_output;
+
   
   //Displaying the data
   Serial.print("\n\nIMU1\t");
