@@ -51,26 +51,37 @@ boolean set_gyro_angles;
 float angle_roll_acc, angle_pitch_acc;
 float angle_pitch_output, angle_roll_output;
 
-void setup() {
-  Wire.begin();                                                        //Start I2C as master
-  Serial.begin(57600);                                               //Use only for debugging
-  pinMode(13, OUTPUT);                                                 //Set output 13 (LED) as output
-  
-  setup_mpu_6050_registers();                                          //Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
-  digitalWrite(13, HIGH);                                              //Set digital output 13 high to indicate startup
+int digitalPin = 7;
 
-  for (int cal_int = 0; cal_int < 2000 ; cal_int ++){                  //Run this code 2000 times
+
+void setup() {
+  Wire.begin();//Start I2C as master
+  Serial.begin(57600);//Use only for debugging
+  
+
+  for (int pin = 2; pin<= 7;pin++)
+  {  pinMode(pin, OUTPUT);//Set output 13 (LED) as output
+    digitalWrite(pin, HIGH);}
+
+  digitalWrite(digitalPin, LOW);//Set digital output 13 high to indicate startup
+  setup_mpu_6050_registers();//Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
+  digitalWrite(digitalPin, HIGH);
+  delay(3);
+
+  int calIter = 200; //Calibration Interations (different to cal_int)
+
+  for (int cal_int = 0; cal_int < calIter ; cal_int ++){                  //Run this code 2000 times
     read_mpu_6050_data();                                              //Read the raw acc and gyro data from the MPU-6050
     gyro_x_cal += gyro_x;                                              //Add the gyro x-axis offset to the gyro_x_cal variable
     gyro_y_cal += gyro_y;                                              //Add the gyro y-axis offset to the gyro_y_cal variable
     gyro_z_cal += gyro_z;                                              //Add the gyro z-axis offset to the gyro_z_cal variable
     delay(3);                                                          //Delay 3us to simulate the 250Hz program loop
   }
-  gyro_x_cal /= 2000;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
-  gyro_y_cal /= 2000;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
-  gyro_z_cal /= 2000;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
+  gyro_x_cal /= calIter;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
+  gyro_y_cal /= calIter;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
+  gyro_z_cal /= calIter;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
 
-  digitalWrite(13, LOW);                                               //All done, turn the LED off
+  //digitalWrite(digitalPin, HIGH);                                               //All done, turn the LED off
   
   loop_timer = micros();                                               //Reset the loop timer
 }
@@ -95,7 +106,12 @@ void loop(){
 
 
 //Need to input the imu pin number or something to allow us to select the right imu
-void read_mpu_6050_data(){                                             //Subroutine for reading the raw gyro and accelerometer data
+void read_mpu_6050_data(){   //Subroutine for reading the raw gyro and accelerometer data
+  digitalWrite(digitalPin,LOW);
+
+  for(int pin=2; pin <=7; pin++)
+  {Serial.print("Pin ");Serial.print(pin);Serial.print(": ");Serial.println(digitalRead(pin));}
+  
   Wire.beginTransmission(0x68);                                        //Start communicating with the MPU-6050
   Wire.write(0x3B);                                                    //Send the requested starting register
   Wire.endTransmission();                                              //End the transmission
@@ -108,6 +124,7 @@ void read_mpu_6050_data(){                                             //Subrout
   gyro_x = Wire.read()<<8|Wire.read();                                 //Add the low and high byte to the gyro_x variable
   gyro_y = Wire.read()<<8|Wire.read();                                 //Add the low and high byte to the gyro_y variable
   gyro_z = Wire.read()<<8|Wire.read();                                 //Add the low and high byte to the gyro_z variable
+  digitalWrite(digitalPin,HIGH);
 
 }
 
@@ -135,12 +152,19 @@ void computeAngle(){//int imuNumber){
 
   gyro_x -= gyro_x_cal;                                                //Subtract the offset calibration value from the raw gyro_x value
   gyro_y -= gyro_y_cal;                                                //Subtract the offset calibration value from the raw gyro_y value
-  gyro_z -= gyro_z_cal;                                                //Subtract the offset calibration value from the raw gyro_z value
+  gyro_z -= gyro_z_cal; 
+//  Serial.println(gyro_x);
+  
+  //Subtract the offset calibration value from the raw gyro_z value
   
   //Gyro angle calculations
   //0.0000611 = 1 / (250Hz / 65.5)
   angle_pitch += gyro_x * 0.0000611;                                   //Calculate the traveled pitch angle and add this to the angle_pitch variable
-  angle_roll += gyro_y * 0.0000611;                                    //Calculate the traveled roll angle and add this to the angle_roll variable
+  angle_roll += gyro_y * 0.0000611;
+
+//  Serial.println(angle_pitch);
+  
+  //Calculate the traveled roll angle and add this to the angle_roll variable
   
   //0.000001066 = 0.0000611 * (3.142(PI) / 180degr) The Arduino sin function is in radians
   angle_pitch += angle_roll * sin(gyro_z * 0.000001066);               //If the IMU has yawed transfer the roll angle to the pitch angel

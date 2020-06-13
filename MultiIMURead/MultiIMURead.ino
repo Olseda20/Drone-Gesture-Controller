@@ -40,7 +40,7 @@ SCL  -  A5
 const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
 
 //Include LCD and I2C library
-int no_sensors = 6;// the number of sensors in the system
+int no_sensors = 5;// the number of sensors in the system
 int pin;
 //Declaring some global variables
 int gyro_x[6], gyro_y[6], gyro_z[6];
@@ -55,6 +55,8 @@ int angle_pitch_buffer[6], angle_roll_buffer[6];
 boolean set_gyro_angles[6];
 float angle_roll_acc[6], angle_pitch_acc[6];
 float angle_pitch_output[6], angle_roll_output[6];
+
+//float prevComputeAngle[6];
   
 void setup() {
   //Setting up the IMUs
@@ -73,10 +75,11 @@ void setup() {
   digitalWrite(pin,LOW); //turn on the IMU 
   setup_mpu_6050_registers();     //Setup the registers of the MPU-6050  (i-2 because IMU_num are 0-5 and pin are 2-7)
   digitalWrite(pin,HIGH); // turn off the IMU
+  delay(3);
   }
 
 
-  int calIter = 2000; //Calibration Interations (different to cal_int)
+  int calIter = 200; //Calibration Interations (different to cal_int)
   
   
   //Calibrating the IMUs
@@ -93,68 +96,71 @@ void setup() {
     //Delay 3us to simulate the 250Hz program loop
   }
   for(int IMU_num = 0; IMU_num <= no_sensors-1; IMU_num++){
-  gyro_x_cal[IMU_num] /= calIter;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
-  gyro_y_cal[IMU_num] /= calIter;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
-  gyro_z_cal[IMU_num] /= calIter;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
+  gyro_x_cal[IMU_num] /= calIter;//Divide the gyro_x_cal variable by 2000 to get the avarage offset
+  gyro_y_cal[IMU_num] /= calIter;//Divide the gyro_y_cal variable by 2000 to get the avarage offset
+  gyro_z_cal[IMU_num] /= calIter;//Divide the gyro_z_cal variable by 2000 to get the avarage offset
   Serial.print("Calibrating IMU ");Serial.print(IMU_num);Serial.print(" complete ");
 
-  loop_timer = micros();                                               //Reset the loop timer
+  loop_timer = micros();//Reset the loop timer
   }
 }
+
 
 void loop(){
   for(int IMU_num = 0; IMU_num <=no_sensors-1; IMU_num++)
   {
-   computeAngle(IMU_num);
-
+    computeAngle(IMU_num);
+    delay(3);
   }
-  
 //// Displaying the data
 
-//  Serial.print("\n\nIMU1\t");
-////  Serial.print("Gyro x: "); Serial.print(gyro_x[0]);
-////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[0]);
-////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[0]);
-//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[0]);
-//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[0]);
-//  
-//  Serial.print("\nIMU2\t");
-////  Serial.print("Gyro x: "); Serial.print(gyro_x[1]);
-////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[1]);
-////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[1]);
-//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[1]);
-//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[1]);
+  Serial.print("\n\nIMU1\t");
+//  Serial.print("Gyro x: "); Serial.print(gyro_x[0]);
+//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[0]);
+//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[0]);
+  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[0]);
+  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[0]);
+  
+  Serial.print("\nIMU2\t");
+//  Serial.print("Gyro x: "); Serial.print(gyro_x[1]);
+//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[1]);
+//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[1]);
+  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[1]);
+  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[1]);
+
+  Serial.print("\nIMU3\t");
+//  Serial.print("Gyro x: "); Serial.print(gyro_x[2]);
+//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[2]);
+//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[2]);
+  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[2]);
+  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[2]);
+
+  Serial.print("\nIMU4\t");
+//  Serial.print("Gyro x: "); Serial.print(gyro_x[3]);
+//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[3]);
+//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[3]);
+  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[3]);
+  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[3]);
 //
-//  Serial.print("\nIMU3\t");
-////  Serial.print("Gyro x: "); Serial.print(gyro_x[2]);
-////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[2]);
-////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[2]);
-//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[2]);
-//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[2]);
-
-//  Serial.print("\nIMU4\t");
-////  Serial.print("Gyro x: "); Serial.print(gyro_x[3]);
-////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[3]);
-////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[3]);
-//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[3]);
-//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[3]);
-
-//  Serial.print("\nIMU5\t");
+  Serial.print("\nIMU5\t");
 ////  Serial.print("Gyro x: "); Serial.print(gyro_x[4]);
 ////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[4]);
 ////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[4]);
-//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[4]);
-//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[4]);
+  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[4]);
+  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[4]);
 //
-  Serial.print("\nIMU6\t");
-//  Serial.print("Gyro x: "); Serial.print(gyro_x[5]);
-//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[5]);
-//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[5]);
-  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[5]);
-  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[5]);
+//  Serial.print("\nIMU6\t");
+////  Serial.print("Gyro x: "); Serial.print(gyro_x[5]);
+////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[5]);
+////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[5]);
+//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[5]);
+//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[5]);
+
+
 
   while(micros() - loop_timer < 4000);//Wait until the loop_timer reaches 4000us (250Hz) before starting the next loop
   loop_timer = micros();//Reset the loop timer
+//  delay(200);
 }
 
 
@@ -205,12 +211,20 @@ void computeAngle(int IMU_num){
 void read_mpu_6050_data(int IMU_num){//Subroutine for reading the raw gyro and accelerometer data
 
   pin = pinSelector(IMU_num); //Selecting the relevant pit for the IMU
+  
+  for (int pin = 2; pin <=7; pin++){
+  digitalWrite(pin,HIGH);
+  }
+  
   digitalWrite(pin,LOW);
   Wire.beginTransmission(MPU_ADDR); //Start communicating with the MPU-6050
   Wire.write(0x3B);                 //Send the requested starting register
   Wire.endTransmission();           //End the transmission
   Wire.requestFrom(MPU_ADDR,14);    //Request 14 bytes from the MPU-6050
+  if (Wire.available() == 14);
+  { 
   while(Wire.available() < 14);     //Wait until all the bytes are received
+//    Serial.print("\t");Serial.print(Wire.available());
   acc_x[IMU_num] = Wire.read()<<8|Wire.read();  //Add the low and high byte to the acc_x variable
   acc_y[IMU_num] = Wire.read()<<8|Wire.read();  //Add the low and high byte to the acc_y variable
   acc_z[IMU_num] = Wire.read()<<8|Wire.read();  //Add the low and high byte to the acc_z variable
@@ -219,6 +233,8 @@ void read_mpu_6050_data(int IMU_num){//Subroutine for reading the raw gyro and a
   gyro_y[IMU_num] = Wire.read()<<8|Wire.read(); //Add the low and high byte to the gyro_y variable
   gyro_z[IMU_num] = Wire.read()<<8|Wire.read(); //Add the low and high byte to the gyro_z variable
   digitalWrite(pin,HIGH);
+  }
+  
 }
 
 
