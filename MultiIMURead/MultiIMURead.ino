@@ -2,7 +2,7 @@
 /*Terms of use
 ///////////////////////////////////////////////////////////////////////////////////////
 //THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARR/ANTIES OF MERCHANTABILITY,
 //FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 //AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
@@ -40,7 +40,7 @@ SCL  -  A5
 const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
 
 //Include LCD and I2C library
-int no_sensors = 5;// the number of sensors in the system
+int no_sensors = 6;// the number of sensors in the system
 int pin;
 //Declaring some global variables
 int gyro_x[6], gyro_y[6], gyro_z[6];
@@ -128,34 +128,36 @@ void loop(){
   Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[1]);
   Serial.print("  \tRoll: "); Serial.print(angle_roll_output[1]);
 
-  Serial.print("\nIMU3\t");
-//  Serial.print("Gyro x: "); Serial.print(gyro_x[2]);
-//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[2]);
-//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[2]);
-  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[2]);
-  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[2]);
+//  Serial.print("\nIMU3\t");
+//////  Serial.print("Gyro x: "); Serial.print(gyro_x[2]);
+//////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[2]);
+//////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[2]);
+//  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[2]);
+//  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[2]);
 
   Serial.print("\nIMU4\t");
-//  Serial.print("Gyro x: "); Serial.print(gyro_x[3]);
-//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[3]);
-//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[3]);
+////  Serial.print("Gyro x: "); Serial.print(gyro_x[3]);
+////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[3]);
+////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[3]);
   Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[3]);
   Serial.print("  \tRoll: "); Serial.print(angle_roll_output[3]);
-//
+////
   Serial.print("\nIMU5\t");
 ////  Serial.print("Gyro x: "); Serial.print(gyro_x[4]);
 ////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[4]);
 ////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[4]);
   Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[4]);
   Serial.print("  \tRoll: "); Serial.print(angle_roll_output[4]);
-//
+
 //  Serial.print("\nIMU6\t");
-////  Serial.print("Gyro x: "); Serial.print(gyro_x[5]);
-////  Serial.print("  \tGyro y: "); Serial.print(gyro_y[5]);
-////  Serial.print("  \tGyro z: "); Serial.print(gyro_z[5]);
+//  Serial.print("Gyro x: "); Serial.print(gyro_x[5]);
+//  Serial.print("  \tGyro y: "); Serial.print(gyro_y[5]);
+//  Serial.print("  \tGyro z: "); Serial.print(gyro_z[5]);
 //  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[5]);
 //  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[5]);
-
+//  Serial.print("  \tAcc Z: "); Serial.print(findIMUDirection(acc_z[5]));
+   pitchCheck();
+   FailSafeCheck( );
 
 
   while(micros() - loop_timer < 4000);//Wait until the loop_timer reaches 4000us (250Hz) before starting the next loop
@@ -191,19 +193,21 @@ void computeAngle(int IMU_num){
   angle_pitch_acc[IMU_num] -= 0.0;//Accelerometer calibration value for pitch
   angle_roll_acc[IMU_num] -= 0.0;//Accelerometer calibration value for roll
 
+  float tuneparam = 0.76;
   if(set_gyro_angles[IMU_num]){//If the IMU is already started
-    angle_pitch[IMU_num] = angle_pitch[IMU_num] * 0.95 + angle_pitch_acc[IMU_num] * 0.05;//Correct the drift of the gyro pitch angle with the accelerometer pitch angle
-    angle_roll[IMU_num] = angle_roll[IMU_num] * 0.95 + angle_roll_acc[IMU_num] * 0.05;//Correct the drift of the gyro roll angle with the accelerometer roll angle
+    angle_pitch[IMU_num] = angle_pitch[IMU_num] * tuneparam + angle_pitch_acc[IMU_num] * (1-tuneparam);//Correct the drift of the gyro pitch angle with the accelerometer pitch angle
+    angle_roll[IMU_num] = angle_roll[IMU_num] * tuneparam + angle_roll_acc[IMU_num] * (1-tuneparam);//Correct the drift of the gyro roll angle with the accelerometer roll angle
   }
   else{//At first start
     angle_pitch[IMU_num] = angle_pitch_acc[IMU_num];//Set the gyro pitch angle equal to the accelerometer pitch angle 
     angle_roll[IMU_num] = angle_roll_acc[IMU_num];//Set the gyro roll angle equal to the accelerometer roll angle 
     set_gyro_angles[IMU_num] = true;//Set the IMU started flag
   }
-  
+
+    float tuneparam2 = 0.76;
     //To dampen the pitch and roll angles a complementary filter is used
-    angle_pitch_output[IMU_num] = angle_pitch_output[IMU_num] * 0.9 + angle_pitch[IMU_num] * 0.1; //Take 90% of the output pitch value and add 10% of the raw pitch value
-    angle_roll_output[IMU_num] = angle_roll_output[IMU_num] * 0.9 + angle_roll[IMU_num] * 0.1;    //Take 90% of the output roll value and add 10% of the raw roll value
+    angle_pitch_output[IMU_num] = angle_pitch_output[IMU_num] * tuneparam2 + angle_pitch[IMU_num] * (1-tuneparam2); //Take 90% of the output pitch value and add 10% of the raw pitch value
+    angle_roll_output[IMU_num] = angle_roll_output[IMU_num] * tuneparam2 + angle_roll[IMU_num] * (1-tuneparam2);    //Take 90% of the output roll value and add 10% of the raw roll value
 }
 
 
@@ -281,3 +285,48 @@ int pinSelector(int IMU_number){
 //      break;
   }
 } 
+
+// function to identify the z direction of an IMU
+int findIMUDirection(int Z){
+  if (Z > 0){ return 1;} // 1 indicated the glove is pointing upwards
+  else if (Z < 0){ return 2;} // 2 indicated the glove is pointing downwards
+  else{ return 0;} // 0 indicated the glove is pointing unknown
+
+}
+
+void pitchCheck( ){
+    if (findIMUDirection(acc_z[5]) == 1 && abs(angle_pitch_output[5]) < 60) 
+      {
+
+        int PitThrFor = 15;
+        int PitThrBac = -15;
+        
+        if (angle_pitch_output[0] >=PitThrFor && angle_pitch_output[1] >=PitThrFor && 
+        angle_pitch_output[3] >=PitThrFor && angle_pitch_output[4] >=PitThrFor)
+        {Serial.print("Pitch Down");} // interfacing point to raspi   
+         
+        else if (angle_pitch_output[0] <=PitThrBac && angle_pitch_output[1] <=PitThrBac && 
+        angle_pitch_output[3] <=PitThrBac && angle_pitch_output[4] <=PitThrBac)
+        {Serial.print("Pitch Up");} // interfacing point to raspi    
+        
+        int RolThrRig = -15;
+        int RolThrLef = 15;
+        if (angle_roll_output[0] <=RolThrRig && angle_roll_output[1] <=RolThrRig && 
+        angle_roll_output[3] <=RolThrRig && angle_roll_output[4] <=RolThrRig)
+        {Serial.print("Roll Right");} // interfacing point to raspi 
+             
+        else if (angle_roll_output[0] >=RolThrLef && angle_roll_output[1] >=RolThrLef && 
+        angle_roll_output[3] >=RolThrLef && angle_roll_output[4] >=RolThrLef)
+        {Serial.print("Roll Left");} // interfacing point to raspi    
+      }
+      }
+
+void FailSafeCheck( ){
+    if (findIMUDirection(acc_z[5]) == 2) 
+      {
+        Serial.print("upside down");
+        if( findIMUDirection(acc_z[1]) == 1 && findIMUDirection(acc_z[3]) == 1 && 
+            findIMUDirection(acc_z[4]) == 1 )
+            {Serial.print("FailSafe");}
+      }
+      }
