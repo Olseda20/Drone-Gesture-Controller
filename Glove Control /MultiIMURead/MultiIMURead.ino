@@ -178,11 +178,6 @@ void loop(){
 ////  Serial.print("  \tPitch: "); Serial.print(angle_pitch_output[5]);
 ////  Serial.print("  \tRoll: "); Serial.print(angle_roll_output[5]);
 ////  Serial.print("  \tAcc Z: "); Serial.print(findIMUDirection(acc_z[5]));
-//Serial.print("\nIMU1");Serial.print("\t");Serial.print(acc_x[0]);Serial.print("\t");Serial.print(acc_y[0]);Serial.print("\t");Serial.print(acc_z[0]);
-//Serial.print("\nIMU2");Serial.print("\t");Serial.print(acc_x[1]);Serial.print("\t");Serial.print(acc_y[1]);Serial.print("\t");Serial.print(acc_z[1]);
-//Serial.print("\nIMU3");Serial.print("\t");Serial.print(acc_x[1]);Serial.print("\t");Serial.print(acc_y[1]);Serial.print("\t");Serial.print(acc_z[1]);
-//Serial.print("\nIMU4");Serial.print("\t");Serial.print(acc_x[1]);Serial.print("\t");Serial.print(acc_y[1]);Serial.print("\t");Serial.print(acc_z[1]);
-//Serial.print("\nIMU5");Serial.print("\t");Serial.print(acc_x[1]);Serial.print("\t");Serial.print(acc_y[1]);Serial.print("\t");Serial.print(acc_z[1]);
    pitchCheck();
    FailSafeCheck();
    LandingCheck();
@@ -334,7 +329,7 @@ void pitchCheck( ){
         {Serial.print("Pitch Down\n"); // interfacing point to raspi 
         const char text[] = "Pitch Down";
         radio.write(&text, sizeof(text)); //Write to the open writing pipe. MAYBE NOT &text?
-//        delay(500);  
+        delay(500);  
         }
          
         else if (angle_pitch_output[0] <=PitThrBac && angle_pitch_output[1] <=PitThrBac && 
@@ -346,7 +341,7 @@ void pitchCheck( ){
         //send imu palm data to raspi for linear speed correlation 
 
       
-//        delay(500);  
+        delay(500);  
         }
         
         int RolThrRig = -15;
@@ -356,7 +351,7 @@ void pitchCheck( ){
         {Serial.print("Roll Right\n"); // interfacing point to raspi 
         const char text[] = "Roll Right";
         radio.write(&text, sizeof(text)); //Write to the open writing pipe. MAYBE NOT &text?
-//        delay(500);  
+        delay(500);  
         }
              
         else if (angle_roll_output[0] >=RolThrLef && angle_roll_output[1] >=RolThrLef && 
@@ -364,7 +359,7 @@ void pitchCheck( ){
         {Serial.print("Roll Left\n"); // interfacing point to raspi   
         const char text[] = "Roll Left";
         radio.write(&text, sizeof(text)); //Write to the open writing pipe. MAYBE NOT &text?
-//        delay(500);    
+        delay(500);    
         }
       }
       }
@@ -379,7 +374,7 @@ void FailSafeCheck( ){
               Serial.print("Sending Failsafe Command\n");
               const char text[] = "Failsafe";
               radio.write(&text, sizeof(text)); //Write to the open writing pipe. MAYBE NOT &text?
-//              delay(500);             
+              delay(500);             
             }
       }
       }
@@ -395,7 +390,7 @@ void LandingCheck(){
 //              Transmit("Landing") ; 
                 const char text[] = "Landing";
                 radio.write(&text, sizeof(text)); //Write to the open writing pipe. MAYBE NOT &text?
-//                delay(100);      
+                delay(100);      
             }
       }
       }
